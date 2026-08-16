@@ -156,8 +156,8 @@ button:active {
         
         <!-- 3. 화면 제어 -->
         <div class="btn-group">
-            <button id="lock-landscape-button">가로모드 고정 & 전체화면</button>
-            <button id="unlock-button">고정 해제</button>
+            <button id="lock-landscape-button">전체화면</button>
+            <button id="unlock-button">전체화면 해제</button>
         </div>
     </div>
 </div>
@@ -179,20 +179,46 @@ function updateClock() {
 // 기온
 function fetchWeather() {
     var xhr = new XMLHttpRequest();
-    var url = 'https://api.open-meteo.com/v1/forecast?latitude=36.351&longitude=127.385&current_weather=true';
+
+    var url = 'https://api.open-meteo.com/v1/forecast' +
+              '?latitude=36.351' +
+              '&longitude=127.385' +
+              '&current_weather=true';
+
     xhr.open('GET', url, true);
-    xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-                var response = JSON.parse(xhr.responseText);
-                var temp = response.current_weather.temperature;
-                document.getElementById('weather-temp').innerText = temp.toFixed(1) + ' °C';
-            } catch(e) {
-                document.getElementById('weather-temp').innerText = '오류';
+
+    xhr.onreadystatechange = function () {
+        if (xhr.readyState == 4) {
+
+            if (xhr.status >= 200 && xhr.status < 300) {
+                var response;
+
+                try {
+                    response = JSON.parse(xhr.responseText);
+
+                    if (response.current_weather &&
+                        typeof response.current_weather.temperature != 'undefined') {
+
+                        var temp = response.current_weather.temperature;
+
+                        document.getElementById('weather-temp').innerHTML =
+                            temp.toFixed(1) + ' °C';
+
+                    } else {
+                        document.getElementById('weather-temp').innerHTML = '오류';
+                    }
+
+                } catch (e) {
+                    document.getElementById('weather-temp').innerHTML = '오류';
+                }
+
+            } else {
+                document.getElementById('weather-temp').innerHTML = '오류';
             }
         }
     };
-    xhr.send();
+
+    xhr.send(null);
 }
 
 // 환율
@@ -212,7 +238,7 @@ function fetchRate() {
                               (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes());
                 document.getElementById('update-time').innerText = '최근 갱신: ' + timeStr;
             } catch(e) {
-                document.getElementById('update-time').innerText = '파싱 오류';
+                document.getElementById('update-time').innerText = '오류';
             }
         }
     };

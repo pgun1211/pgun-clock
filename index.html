@@ -184,43 +184,17 @@ function fetchWeather() {
         'https://api.open-meteo.com/v1/forecast' +
         '?latitude=36.351' +
         '&longitude=127.385' +
-        '&current=temperature_2m' +
-        '&temperature_unit=celsius';
+        '&current=temperature_2m';
 
     xhr.open('GET', url, true);
 
     xhr.onreadystatechange = function () {
-        if (xhr.readyState !== 4) {
-            return;
+
+        if (xhr.readyState == 4) {
+
+            document.getElementById('weather-temp').innerHTML =
+                'HTTP ' + xhr.status + '<br>' + xhr.responseText;
         }
-
-        if (xhr.status !== 200) {
-            document.getElementById('weather-temp').innerHTML = '오류';
-            return;
-        }
-
-        try {
-            var data = JSON.parse(xhr.responseText);
-
-            if (data.current &&
-                data.current.temperature_2m !== undefined) {
-
-                var temp = Number(data.current.temperature_2m);
-
-                document.getElementById('weather-temp').innerHTML =
-                    temp.toFixed(1) + ' °C';
-
-            } else {
-                document.getElementById('weather-temp').innerHTML = '오류';
-            }
-
-        } catch (e) {
-            document.getElementById('weather-temp').innerHTML = '오류';
-        }
-    };
-
-    xhr.onerror = function () {
-        document.getElementById('weather-temp').innerHTML = '오류';
     };
 
     xhr.send(null);

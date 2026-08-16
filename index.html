@@ -180,38 +180,52 @@ function updateClock() {
 function fetchWeather() {
     var xhr = new XMLHttpRequest();
 
-    var url = 'https://api.open-meteo.com/v1/forecast' +
-              '?latitude=36.351' +
-              '&longitude=127.385' +
-              '&current_weather=true';
+    var url =
+        'https://api.open-meteo.com/v1/forecast' +
+        '?latitude=36.351' +
+        '&longitude=127.385' +
+        '&current=temperature_2m' +
+        '&temperature_unit=celsius';
 
     xhr.open('GET', url, true);
 
     xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
+        if (xhr.readyState !== 4) {
+            return;
+        }
 
-            if (xhr.status >= 200 && xhr.status < 300) {
+        if (xhr.status !== 200) {
+            document.getElementById('weather-temp').innerHTML = '오류';
+            return;
+        }
 
-                var text = xhr.responseText;
-                var match = text.match(/"temperature"\s*:\s*(-?[0-9.]+)/);
+        try {
+            var data = JSON.parse(xhr.responseText);
 
-                if (match) {
-                    var temp = parseFloat(match[1]);
+            if (data.current &&
+                data.current.temperature_2m !== undefined) {
 
-                    document.getElementById('weather-temp').innerHTML =
-                        temp.toFixed(1) + ' °C';
-                } else {
-                    document.getElementById('weather-temp').innerHTML = '오류';
-                }
+                var temp = Number(data.current.temperature_2m);
+
+                document.getElementById('weather-temp').innerHTML =
+                    temp.toFixed(1) + ' °C';
 
             } else {
                 document.getElementById('weather-temp').innerHTML = '오류';
             }
+
+        } catch (e) {
+            document.getElementById('weather-temp').innerHTML = '오류';
         }
+    };
+
+    xhr.onerror = function () {
+        document.getElementById('weather-temp').innerHTML = '오류';
     };
 
     xhr.send(null);
 }
+
 // 환율
 function fetchRate() {
     var xhr = new XMLHttpRequest();

@@ -191,24 +191,16 @@ function fetchWeather() {
         if (xhr.readyState == 4) {
 
             if (xhr.status >= 200 && xhr.status < 300) {
-                var response;
 
-                try {
-                    response = JSON.parse(xhr.responseText);
+                var text = xhr.responseText;
+                var match = text.match(/"temperature"\s*:\s*(-?[0-9.]+)/);
 
-                    if (response.current_weather &&
-                        typeof response.current_weather.temperature != 'undefined') {
+                if (match) {
+                    var temp = parseFloat(match[1]);
 
-                        var temp = response.current_weather.temperature;
-
-                        document.getElementById('weather-temp').innerHTML =
-                            temp.toFixed(1) + ' °C';
-
-                    } else {
-                        document.getElementById('weather-temp').innerHTML = '오류';
-                    }
-
-                } catch (e) {
+                    document.getElementById('weather-temp').innerHTML =
+                        temp.toFixed(1) + ' °C';
+                } else {
                     document.getElementById('weather-temp').innerHTML = '오류';
                 }
 
@@ -220,7 +212,6 @@ function fetchWeather() {
 
     xhr.send(null);
 }
-
 // 환율
 function fetchRate() {
     var xhr = new XMLHttpRequest();

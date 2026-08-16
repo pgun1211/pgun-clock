@@ -3,15 +3,24 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<title>환율 탁상시계</title>
+<title>pgun-clock</title>
 <style>
+
+/* 폰트 */
+@font-face {
+    font-family: 'Mulmaru';
+    src: url('https://cdn.jsdelivr.net/gh/projectnoonnu/2601-4@1.1/Mulmaru.woff2') format('woff2');
+    font-weight: normal;
+    font-display: swap;
+}
+
 html, body {
     height: 100%;
     margin: 0;
     padding: 0;
     background-color: #000000;
     color: #ffffff;
-    font-family: sans-serif;
+    font-family: 'Mulmaru', sans-serif;
     overflow: hidden;
     user-select: none;
     -webkit-user-select: none;
@@ -37,54 +46,78 @@ html, body {
     background-color: #000000;
 }
 
-/* 번인 방지 이동을 위한 박스 */
+/* 번인 방지 이동 영역 */
 .content-box {
     text-align: center;
     transition: transform 0.8s ease-in-out;
     -webkit-transition: -webkit-transform 0.8s ease-in-out;
+    padding: 10px;
 }
 
 .clock {
-    font-size: 2.8rem;
-    color: #aaaaaa;
-    font-weight: 300;
-    margin-bottom: 10px;
+    font-size: 3.8rem;
+    color: #ffffff;
+    font-weight: normal;
     letter-spacing: 2px;
-}
-
-.title {
-    font-size: 1.5rem;
-    color: #888888;
-    margin-bottom: 8px;
-    font-weight: bold;
-}
-
-.rate {
-    font-size: 4.5rem;
-    font-weight: bold;
-    color: #00ffcc;
     margin-bottom: 15px;
 }
 
+.info-row {
+    display: flex;
+    display: -webkit-box;
+    -webkit-box-pack: center;
+    justify-content: center;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 15px;
+}
+
+.card {
+    background-color: #111111;
+    border: 1px solid #222222;
+    border-radius: 10px;
+    padding: 15px 25px;
+    min-width: 160px;
+}
+
+.card-title {
+    font-size: 1.1rem;
+    color: #888888;
+    margin-bottom: 5px;
+}
+
+.card-value {
+    font-size: 2.5rem;
+}
+
+.weather-val {
+    color: #ff9900;
+}
+
+.rate-val {
+    color: #00ffcc;
+}
+
 .status-info {
-    font-size: 0.95rem;
+    font-size: 0.85rem;
     color: #555555;
-    margin-bottom: 25px;
+    margin-bottom: 20px;
 }
 
 /* 버튼 스타일 */
 .btn-group {
     display: flex;
+    justify-content: center;
     gap: 10px;
 }
 
 button {
+    font-family: 'Mulmaru', sans-serif;
     background-color: #222222;
     border: 1px solid #444444;
     color: #ffffff;
-    padding: 10px 20px;
-    font-size: 0.9rem;
-    font-weight: bold;
+    padding: 10px 18px;
+    font-size: 0.85rem;
     border-radius: 5px;
     outline: none;
     cursor: pointer;
@@ -104,11 +137,24 @@ button:active {
 
 <div id="container">
     <div class="content-box" id="box">
+        <!-- 1. 시계 -->
         <div class="clock" id="clock-display">00:00:00</div>
-        <div class="title">USD / KRW</div>
-        <div class="rate" id="exchange-rate">---.-- 원</div>
-        <div class="status-info" id="update-time">환율 데이터를 가져오는 중...</div>
         
+        <!-- 2. 대전 날씨 & 환율 -->
+        <div class="info-row">
+            <div class="card">
+                <div class="card-title">대전광역시 기온</div>
+                <div class="card-value weather-val" id="weather-temp">--.- °C</div>
+            </div>
+            <div class="card">
+                <div class="card-title">원·달러 환율</div>
+                <div class="card-value rate-val" id="exchange-rate">----.-- 원</div>
+            </div>
+        </div>
+
+        <div class="status-info" id="update-time">데이터 수신 준비 중...</div>
+        
+        <!-- 3. 화면 제어 -->
         <div class="btn-group">
             <button id="lock-landscape-button">가로모드 고정 & 전체화면</button>
             <button id="unlock-button">고정 해제</button>
@@ -121,7 +167,7 @@ var _LOCK_BUTTON = document.querySelector("#lock-landscape-button"),
     _UNLOCK_BUTTON = document.querySelector("#unlock-button"),
     _CONTAINER = document.querySelector("#container");
 
-// 1. 시계 업데이트
+// 디지털 시계
 function updateClock() {
     var now = new Date();
     var h = now.getHours() < 10 ? '0' + now.getHours() : now.getHours();
@@ -130,7 +176,26 @@ function updateClock() {
     document.getElementById('clock-display').innerText = h + ':' + m + ':' + s;
 }
 
-// 2. 환율 데이터 수신
+// 기온
+function fetchWeather() {
+    var xhr = new XMLHttpRequest();
+    var url = 'https://api.open-meteo.com/v1/forecast?latitude=36.351&longitude=127.385&current_weather=true';
+    xhr.open('GET', url, true);
+    xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
+                var response = JSON.parse(xhr.responseText);
+                var temp = response.current_weather.temperature;
+                document.getElementById('weather-temp').innerText = temp.toFixed(1) + ' °C';
+            } catch(e) {
+                document.getElementById('weather-temp').innerText = '오류';
+            }
+        }
+    };
+    xhr.send();
+}
+
+// 환율
 function fetchRate() {
     var xhr = new XMLHttpRequest();
     xhr.open('GET', 'https://open.er-api.com/v6/latest/USD', true);
@@ -139,7 +204,7 @@ function fetchRate() {
             try {
                 var response = JSON.parse(xhr.responseText);
                 var krwRate = response.rates.KRW;
-                document.getElementById('exchange-rate').innerText = krwRate.toFixed(2) + ' 원';
+                document.getElementById('exchange-rate').innerText = krwRate.toFixed(1) + ' 원';
                 
                 var now = new Date();
                 var timeStr = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + 
@@ -147,14 +212,14 @@ function fetchRate() {
                               (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes());
                 document.getElementById('update-time').innerText = '최근 갱신: ' + timeStr;
             } catch(e) {
-                document.getElementById('update-time').innerText = '데이터 파싱 오류';
+                document.getElementById('update-time').innerText = '파싱 오류';
             }
         }
     };
     xhr.send();
 }
 
-// 3. 번인 방지 (2분마다 미세 위치 이동)
+// 번인 방지
 function preventBurnIn() {
     var box = document.getElementById('box');
     var x = (Math.random() - 0.5) * 40;
@@ -163,22 +228,19 @@ function preventBurnIn() {
     box.style.webkitTransform = 'translate(' + x + 'px, ' + y + 'px)';
 }
 
-// 4. 전체화면 및 가로모드 고정 이벤트
+// 전체화면 제어
 _LOCK_BUTTON.addEventListener('click', function() {
-    // 전체화면 요청
     if (_CONTAINER.requestFullscreen) {
         _CONTAINER.requestFullscreen();
     } else if (_CONTAINER.webkitRequestFullScreen) {
         _CONTAINER.webkitRequestFullScreen();
     }
 
-    // 가로모드 고정 (구형 브라우저 예외 처리)
     if (screen.orientation && screen.orientation.lock) {
         screen.orientation.lock("landscape-primary").then(function() {
             _LOCK_BUTTON.style.display = 'none';
             _UNLOCK_BUTTON.style.display = 'inline-block';
-        }).catch(function(error) {
-            // 구형 기기에서는 화면 회전만 시도하고 실행 유지
+        }).catch(function() {
             _LOCK_BUTTON.style.display = 'none';
             _UNLOCK_BUTTON.style.display = 'inline-block';
         });
@@ -188,7 +250,6 @@ _LOCK_BUTTON.addEventListener('click', function() {
     }
 });
 
-// 5. 해제 이벤트
 _UNLOCK_BUTTON.addEventListener('click', function() {
     if (document.exitFullscreen) {
         document.exitFullscreen();
@@ -204,7 +265,6 @@ _UNLOCK_BUTTON.addEventListener('click', function() {
     _UNLOCK_BUTTON.style.display = 'none';
 });
 
-// 전체화면 해제 감지
 function onFullscreenChange() {
     if (!document.fullscreenElement && !document.webkitFullscreenElement) {
         _LOCK_BUTTON.style.display = 'inline-block';
@@ -215,10 +275,13 @@ function onFullscreenChange() {
 document.addEventListener("fullscreenchange", onFullscreenChange);
 document.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
-// 타이머 등록
+// 타이머
 updateClock();
+fetchWeather();
 fetchRate();
+
 setInterval(updateClock, 1000);
+setInterval(fetchWeather, 600000);
 setInterval(fetchRate, 60000);
 setInterval(preventBurnIn, 120000);
 </script>

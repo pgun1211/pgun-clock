@@ -55,53 +55,11 @@ html, body {
 }
 
 .clock {
-    font-size: 3.8rem;
-    color: #ffffff;
+    font-size: 8rem;
+    color: #00ff00;
     font-weight: normal;
-    letter-spacing: 2px;
-    margin-bottom: 15px;
-}
-
-.info-row {
-    display: flex;
-    display: -webkit-box;
-    -webkit-box-pack: center;
-    justify-content: center;
-    align-items: center;
-    gap: 30px;
-    margin-bottom: 15px;
-}
-
-.card {
-    background-color: #111111;
-    border: 1px solid #222222;
-    border-radius: 10px;
-    padding: 15px 25px;
-    min-width: 160px;
-}
-
-.card-title {
-    font-size: 1.1rem;
-    color: #888888;
-    margin-bottom: 5px;
-}
-
-.card-value {
-    font-size: 2.5rem;
-}
-
-.weather-val {
-    color: #ff9900;
-}
-
-.rate-val {
-    color: #00ffcc;
-}
-
-.status-info {
-    font-size: 0.85rem;
-    color: #555555;
-    margin-bottom: 20px;
+    letter-spacing: 4px;
+    margin-bottom: 30px;
 }
 
 /* 버튼 스타일 */
@@ -140,21 +98,7 @@ button:active {
         <!-- 1. 시계 -->
         <div class="clock" id="clock-display">00:00:00</div>
         
-        <!-- 2. 대전 날씨 & 환율 -->
-        <div class="info-row">
-            <div class="card">
-                <div class="card-title">대전광역시 기온</div>
-                <div class="card-value weather-val" id="weather-temp">--.- °C</div>
-            </div>
-            <div class="card">
-                <div class="card-title">원·달러 환율</div>
-                <div class="card-value rate-val" id="exchange-rate">----.-- 원</div>
-            </div>
-        </div>
-
-        <div class="status-info" id="update-time">데이터 수신 준비 중...</div>
-        
-        <!-- 3. 화면 제어 -->
+        <!-- 2. 화면 제어 -->
         <div class="btn-group">
             <button id="lock-landscape-button">전체화면</button>
             <button id="unlock-button">전체화면 해제</button>
@@ -174,75 +118,6 @@ function updateClock() {
     var m = now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes();
     var s = now.getSeconds() < 10 ? '0' + now.getSeconds() : now.getSeconds();
     document.getElementById('clock-display').innerText = h + ':' + m + ':' + s;
-}
-
-// 기온
-function fetchWeather() {
-    var xhr = new XMLHttpRequest();
-
-    var url = 'https://api.open-meteo.com/v1/forecast' +
-              '?latitude=36.351' +
-              '&longitude=127.385' +
-              '&current_weather=true';
-
-    xhr.open('GET', url, true);
-
-    xhr.onreadystatechange = function () {
-        if (xhr.readyState == 4) {
-
-            if (xhr.status >= 200 && xhr.status < 300) {
-                var response;
-
-                try {
-                    response = JSON.parse(xhr.responseText);
-
-                    if (response.current_weather &&
-                        typeof response.current_weather.temperature != 'undefined') {
-
-                        var temp = response.current_weather.temperature;
-
-                        document.getElementById('weather-temp').innerHTML =
-                            temp.toFixed(1) + ' °C';
-
-                    } else {
-                        document.getElementById('weather-temp').innerHTML = '오류';
-                    }
-
-                } catch (e) {
-                    document.getElementById('weather-temp').innerHTML = '오류';
-                }
-
-            } else {
-                document.getElementById('weather-temp').innerHTML = '오류';
-            }
-        }
-    };
-
-    xhr.send(null);
-}
-
-// 환율
-function fetchRate() {
-    var xhr = new XMLHttpRequest();
-    xhr.open('GET', 'https://open.er-api.com/v6/latest/USD', true);
-    xhr.onload = function () {
-        if (xhr.status >= 200 && xhr.status < 300) {
-            try {
-                var response = JSON.parse(xhr.responseText);
-                var krwRate = response.rates.KRW;
-                document.getElementById('exchange-rate').innerText = krwRate.toFixed(1) + ' 원';
-                
-                var now = new Date();
-                var timeStr = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + 
-                              (now.getHours() < 10 ? '0' + now.getHours() : now.getHours()) + ':' + 
-                              (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes());
-                document.getElementById('update-time').innerText = '최근 갱신: ' + timeStr;
-            } catch(e) {
-                document.getElementById('update-time').innerText = '오류';
-            }
-        }
-    };
-    xhr.send();
 }
 
 // 번인 방지
@@ -303,12 +178,7 @@ document.addEventListener("webkitfullscreenchange", onFullscreenChange);
 
 // 타이머
 updateClock();
-fetchWeather();
-fetchRate();
-
 setInterval(updateClock, 1000);
-setInterval(fetchWeather, 600000);
-setInterval(fetchRate, 60000);
 setInterval(preventBurnIn, 120000);
 </script>
 

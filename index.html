@@ -1,85 +1,226 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>환율 모니터</title>
-    <style>
-        body {
-            background-color: #000000;
-            color: #ffffff;
-            font-family: sans-serif;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            overflow: hidden;
-        }
-        .container {
-            text-align: center;
-            transition: all 0.5s ease;
-        }
-        .title {
-            font-size: 1.5rem;
-            color: #888888;
-            margin-bottom: 10px;
-        }
-        .rate {
-            font-size: 3.5rem;
-            font-weight: bold;
-            color: #00ffcc;
-        }
-        .time {
-            font-size: 1rem;
-            color: #555555;
-            margin-top: 15px;
-        }
-    </style>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>환율 탁상시계</title>
+<style>
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #000000;
+    color: #ffffff;
+    font-family: sans-serif;
+    overflow: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+}
+
+#container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-box-pack: center;
+    -webkit-box-align: center;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    box-sizing: border-box;
+}
+
+#container:fullscreen, #container:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+    background-color: #000000;
+}
+
+/* 번인 방지 이동을 위한 박스 */
+.content-box {
+    text-align: center;
+    transition: transform 0.8s ease-in-out;
+    -webkit-transition: -webkit-transform 0.8s ease-in-out;
+}
+
+.clock {
+    font-size: 2.8rem;
+    color: #aaaaaa;
+    font-weight: 300;
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+}
+
+.title {
+    font-size: 1.5rem;
+    color: #888888;
+    margin-bottom: 8px;
+    font-weight: bold;
+}
+
+.rate {
+    font-size: 4.5rem;
+    font-weight: bold;
+    color: #00ffcc;
+    margin-bottom: 15px;
+}
+
+.status-info {
+    font-size: 0.95rem;
+    color: #555555;
+    margin-bottom: 25px;
+}
+
+/* 버튼 스타일 */
+.btn-group {
+    display: flex;
+    gap: 10px;
+}
+
+button {
+    background-color: #222222;
+    border: 1px solid #444444;
+    color: #ffffff;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: bold;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+button:active {
+    background-color: #444444;
+}
+
+#unlock-button {
+    display: none;
+}
+</style>
 </head>
+
 <body>
 
-<div class="container" id="box">
-    <div class="title">USD / KRW</div>
-    <div class="rate" id="exchange-rate">---.--</div>
-    <div class="time" id="update-time">업데이트 중...</div>
+<div id="container">
+    <div class="content-box" id="box">
+        <div class="clock" id="clock-display">00:00:00</div>
+        <div class="title">USD / KRW</div>
+        <div class="rate" id="exchange-rate">---.-- 원</div>
+        <div class="status-info" id="update-time">환율 데이터를 가져오는 중...</div>
+        
+        <div class="btn-group">
+            <button id="lock-landscape-button">가로모드 고정 & 전체화면</button>
+            <button id="unlock-button">고정 해제</button>
+        </div>
+    </div>
 </div>
 
 <script>
-    // 환율 데이터 가져오기 (open.er-api.com 활용 - 인증키 없이 가볍게 동작)
-    function fetchRate() {
-        var xhr = new XMLHttpRequest();
-        xhr.open('GET', 'https://open.er-api.com/v6/latest/USD', true);
-        xhr.onload = function () {
-            if (xhr.status >= 200 && xhr.status < 300) {
+var _LOCK_BUTTON = document.querySelector("#lock-landscape-button"),
+    _UNLOCK_BUTTON = document.querySelector("#unlock-button"),
+    _CONTAINER = document.querySelector("#container");
+
+// 1. 시계 업데이트
+function updateClock() {
+    var now = new Date();
+    var h = now.getHours() < 10 ? '0' + now.getHours() : now.getHours();
+    var m = now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes();
+    var s = now.getSeconds() < 10 ? '0' + now.getSeconds() : now.getSeconds();
+    document.getElementById('clock-display').innerText = h + ':' + m + ':' + s;
+}
+
+// 2. 환율 데이터 수신
+function fetchRate() {
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', 'https://open.er-api.com/v6/latest/USD', true);
+    xhr.onload = function () {
+        if (xhr.status >= 200 && xhr.status < 300) {
+            try {
                 var response = JSON.parse(xhr.responseText);
                 var krwRate = response.rates.KRW;
                 document.getElementById('exchange-rate').innerText = krwRate.toFixed(2) + ' 원';
                 
                 var now = new Date();
-                document.getElementById('update-time').innerText = '최근 갱신: ' + now.toLocaleTimeString();
+                var timeStr = (now.getMonth() + 1) + '/' + now.getDate() + ' ' + 
+                              (now.getHours() < 10 ? '0' + now.getHours() : now.getHours()) + ':' + 
+                              (now.getMinutes() < 10 ? '0' + now.getMinutes() : now.getMinutes());
+                document.getElementById('update-time').innerText = '최근 갱신: ' + timeStr;
+            } catch(e) {
+                document.getElementById('update-time').innerText = '데이터 파싱 오류';
             }
-        };
-        xhr.send();
+        }
+    };
+    xhr.send();
+}
+
+// 3. 번인 방지 (2분마다 미세 위치 이동)
+function preventBurnIn() {
+    var box = document.getElementById('box');
+    var x = (Math.random() - 0.5) * 40;
+    var y = (Math.random() - 0.5) * 40;
+    box.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    box.style.webkitTransform = 'translate(' + x + 'px, ' + y + 'px)';
+}
+
+// 4. 전체화면 및 가로모드 고정 이벤트
+_LOCK_BUTTON.addEventListener('click', function() {
+    // 전체화면 요청
+    if (_CONTAINER.requestFullscreen) {
+        _CONTAINER.requestFullscreen();
+    } else if (_CONTAINER.webkitRequestFullScreen) {
+        _CONTAINER.webkitRequestFullScreen();
     }
 
-    // AMOLED 번인 방지 (1분마다 위치 상하좌우 미세 이동)
-    function preventBurnIn() {
-        var box = document.getElementById('box');
-        var x = (Math.random() - 0.5) * 40; // -20px ~ 20px
-        var y = (Math.random() - 0.5) * 40;
-        box.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    // 가로모드 고정 (구형 브라우저 예외 처리)
+    if (screen.orientation && screen.orientation.lock) {
+        screen.orientation.lock("landscape-primary").then(function() {
+            _LOCK_BUTTON.style.display = 'none';
+            _UNLOCK_BUTTON.style.display = 'inline-block';
+        }).catch(function(error) {
+            // 구형 기기에서는 화면 회전만 시도하고 실행 유지
+            _LOCK_BUTTON.style.display = 'none';
+            _UNLOCK_BUTTON.style.display = 'inline-block';
+        });
+    } else {
+        _LOCK_BUTTON.style.display = 'none';
+        _UNLOCK_BUTTON.style.display = 'inline-block';
+    }
+});
+
+// 5. 해제 이벤트
+_UNLOCK_BUTTON.addEventListener('click', function() {
+    if (document.exitFullscreen) {
+        document.exitFullscreen();
+    } else if (document.webkitCancelFullScreen) {
+        document.webkitCancelFullScreen();
     }
 
-    // 초기 실행
-    fetchRate();
+    if (screen.orientation && screen.orientation.unlock) {
+        screen.orientation.unlock();
+    }
 
-    // 1분마다 환율 갱신 및 위치 이동
-    setInterval(function() {
-        fetchRate();
-        preventBurnIn();
-    }, 60000);
+    _LOCK_BUTTON.style.display = 'inline-block';
+    _UNLOCK_BUTTON.style.display = 'none';
+});
+
+// 전체화면 해제 감지
+function onFullscreenChange() {
+    if (!document.fullscreenElement && !document.webkitFullscreenElement) {
+        _LOCK_BUTTON.style.display = 'inline-block';
+        _UNLOCK_BUTTON.style.display = 'none';
+    }
+}
+
+document.addEventListener("fullscreenchange", onFullscreenChange);
+document.addEventListener("webkitfullscreenchange", onFullscreenChange);
+
+// 타이머 등록
+updateClock();
+fetchRate();
+setInterval(updateClock, 1000);
+setInterval(fetchRate, 60000);
+setInterval(preventBurnIn, 120000);
 </script>
 
 </body>

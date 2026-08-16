@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>환율 모니터</title>
+    <style>
+        body {
+            background-color: #000000;
+            color: #ffffff;
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            transition: all 0.5s ease;
+        }
+        .title {
+            font-size: 1.5rem;
+            color: #888888;
+            margin-bottom: 10px;
+        }
+        .rate {
+            font-size: 3.5rem;
+            font-weight: bold;
+            color: #00ffcc;
+        }
+        .time {
+            font-size: 1rem;
+            color: #555555;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container" id="box">
+    <div class="title">USD / KRW</div>
+    <div class="rate" id="exchange-rate">---.--</div>
+    <div class="time" id="update-time">업데이트 중...</div>
+</div>
+
+<script>
+    // 환율 데이터 가져오기 (open.er-api.com 활용 - 인증키 없이 가볍게 동작)
+    function fetchRate() {
+        var xhr = new XMLHttpRequest();
+        xhr.open('GET', 'https://open.er-api.com/v6/latest/USD', true);
+        xhr.onload = function () {
+            if (xhr.status >= 200 && xhr.status < 300) {
+                var response = JSON.parse(xhr.responseText);
+                var krwRate = response.rates.KRW;
+                document.getElementById('exchange-rate').innerText = krwRate.toFixed(2) + ' 원';
+                
+                var now = new Date();
+                document.getElementById('update-time').innerText = '최근 갱신: ' + now.toLocaleTimeString();
+            }
+        };
+        xhr.send();
+    }
+
+    // AMOLED 번인 방지 (1분마다 위치 상하좌우 미세 이동)
+    function preventBurnIn() {
+        var box = document.getElementById('box');
+        var x = (Math.random() - 0.5) * 40; // -20px ~ 20px
+        var y = (Math.random() - 0.5) * 40;
+        box.style.transform = 'translate(' + x + 'px, ' + y + 'px)';
+    }
+
+    // 초기 실행
+    fetchRate();
+
+    // 1분마다 환율 갱신 및 위치 이동
+    setInterval(function() {
+        fetchRate();
+        preventBurnIn();
+    }, 60000);
+</script>
+
+</body>
+</html>
